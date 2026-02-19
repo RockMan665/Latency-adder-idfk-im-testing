@@ -17,7 +17,12 @@ def add_latency(delay_ms):
 
 
 def execute_with_latency(command, delay_ms, verbose=False):
-    """Execute a command with added latency before and/or after execution."""
+    """
+    Execute a command with added latency before execution.
+    
+    WARNING: This function uses shell=True for convenience, which can be a security
+    risk if the command contains untrusted input. Only use with trusted commands.
+    """
     if verbose:
         print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] Adding {delay_ms}ms latency before execution...")
     
@@ -49,8 +54,11 @@ def execute_with_latency(command, delay_ms, verbose=False):
         
         return result.returncode
     
-    except Exception as e:
+    except (subprocess.SubprocessError, FileNotFoundError, PermissionError) as e:
         print(f"Error executing command: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
         return 1
 
 
@@ -99,13 +107,13 @@ Examples:
         '-d', '--delay',
         type=float,
         default=100,
-        help='Latency delay in milliseconds (default: 100)'
+        help='Latency delay in milliseconds, supports fractional values (default: 100)'
     )
     
     parser.add_argument(
         '-c', '--command',
         type=str,
-        help='Command to execute with added latency'
+        help='Command to execute with added latency (WARNING: only use trusted commands)'
     )
     
     parser.add_argument(
